@@ -1,0 +1,27 @@
+{
+  "name": "portal-raportowy",
+  "version": "1.0.0",
+  "description": "Employee Report Management System",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "install-backend": "cd backend && npm install",
+    "docker-up": "docker-compose up -d",
+    "docker-down": "docker-compose down"
+  },
+  "keywords": [
+    "reports",
+    "employee",
+    "management",
+    "nodejs",
+    "express",
+    "postgresql"
+  ],
+  "author": "Portal Raportowy Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Crack8502pl/portal-raportowy.git"
+  }
+}

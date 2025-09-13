@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Raportowy - System Zarządzania Raportami Pracowniczymi</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="Portal Raportowy - System zarządzania raportami pracowniczymi z funkcjami tworzenia, edycji i eksportu raportów.">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Ładowanie...</p>
+    </div>
+
+    <!-- Login Page -->
+    <div id="loginPage" class="page-container login-page">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>Portal Raportowy</h1>
+                <p>System Zarządzania Raportami Pracowniczymi</p>
+            </div>
+            
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">Nazwa użytkownika</label>
+                    <input type="text" id="username" name="username" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Hasło</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Zaloguj się</button>
+                
+                <div id="loginError" class="error-message" style="display: none;"></div>
+            </form>
+            
+            <div class="login-footer">
+                <div class="demo-credentials">
+                    <h4>Konta demonstracyjne:</h4>
+                    <p><strong>Administrator:</strong> admin / admin123</p>
+                    <p><strong>Koordynator:</strong> coordinator / coord123</p>
+                    <p><strong>Pracownik:</strong> employee / emp123</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="main-app" style="display: none;">
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <h2>Portal Raportowy</h2>
+            </div>
+            
+            <div class="nav-menu">
+                <div class="nav-item" data-section="dashboard">
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" data-section="reports">
+                    <span>Raporty</span>
+                </div>
+                <div class="nav-item admin-only coordinator-only" data-section="employees">
+                    <span>Pracownicy</span>
+                </div>
+                <div class="nav-item admin-only" data-section="users">
+                    <span>Użytkownicy</span>
+                </div>
+            </div>
+            
+            <div class="nav-user">
+                <div class="user-info">
+                    <span id="userFullName">Użytkownik</span>
+                    <span id="userRole" class="user-role">Rola</span>
+                </div>
+                <div class="user-menu">
+                    <button id="profileBtn" class="btn btn-text">Profil</button>
+                    <button id="logoutBtn" class="btn btn-text">Wyloguj</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboardSection" class="content-section active">
+                <div class="section-header">
+                    <h2>Dashboard</h2>
+                    <p>Przegląd aktywności i najważniejsze informacje</p>
+                </div>
+                
+                <div class="dashboard-cards">
+                    <div class="dashboard-card">
+                        <h3>Moje raporty</h3>
+                        <div class="card-stat">
+                            <span id="myReportsCount">-</span>
+                            <small>raportów</small>
+                        </div>
+                        <button class="btn btn-primary" onclick="showSection('reports')">Zobacz wszystkie</button>
+                    </div>
+                    
+                    <div class="dashboard-card coordinator-only admin-only">
+                        <h3>Wszystkie raporty</h3>
+                        <div class="card-stat">
+                            <span id="allReportsCount">-</span>
+                            <small>raportów</small>
+                        </div>
+                        <button class="btn btn-secondary" onclick="exportAllReports()">Eksportuj</button>
+                    </div>
+                    
+                    <div class="dashboard-card admin-only coordinator-only">
+                        <h3>Pracownicy</h3>
+                        <div class="card-stat">
+                            <span id="employeesCount">-</span>
+                            <small>pracowników</small>
+                        </div>
+                        <button class="btn btn-secondary" onclick="showSection('employees')">Zarządzaj</button>
+                    </div>
+                    
+                    <div class="dashboard-card admin-only">
+                        <h3>Użytkownicy</h3>
+                        <div class="card-stat">
+                            <span id="usersCount">-</span>
+                            <small>użytkowników</small>
+                        </div>
+                        <button class="btn btn-secondary" onclick="showSection('users')">Zarządzaj</button>
+                    </div>
+                </div>
+                
+                <div class="recent-reports">
+                    <h3>Najnowsze raporty</h3>
+                    <div id="recentReportsList" class="reports-list">
+                        <!-- Recent reports will be loaded here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="reportsSection" class="content-section">
+                <div class="section-header">
+                    <h2>Raporty</h2>
+                    <div class="section-actions">
+                        <button id="newReportBtn" class="btn btn-primary">Nowy raport</button>
+                        <button id="exportReportsBtn" class="btn btn-secondary admin-only coordinator-only">Eksportuj</button>
+                    </div>
+                </div>
+                
+                <div class="filters-section">
+                    <div class="filters-row">
+                        <input type="date" id="startDateFilter" placeholder="Data od">
+                        <input type="date" id="endDateFilter" placeholder="Data do">
+                        <select id="statusFilter">
+                            <option value="">Wszystkie statusy</option>
+                            <option value="draft">Szkic</option>
+                            <option value="submitted">Wysłany</option>
+                            <option value="archived">Archiwalny</option>
+                        </select>
+                        <button id="applyFiltersBtn" class="btn btn-secondary">Filtruj</button>
+                        <button id="clearFiltersBtn" class="btn btn-text">Wyczyść</button>
+                    </div>
+                </div>
+                
+                <div id="reportsTable" class="reports-table">
+                    <!-- Reports table will be loaded here -->
+                </div>
+                
+                <div id="reportsPagination" class="pagination">
+                    <!-- Pagination will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Employees Section -->
+            <section id="employeesSection" class="content-section admin-only coordinator-only">
+                <div class="section-header">
+                    <h2>Pracownicy</h2>
+                    <div class="section-actions">
+                        <button id="newEmployeeBtn" class="btn btn-primary">Nowy pracownik</button>
+                    </div>
+                </div>
+                
+                <div class="search-section">
+                    <input type="text" id="employeeSearch" placeholder="Szukaj pracowników..." class="search-input">
+                </div>
+                
+                <div id="employeesTable" class="employees-table">
+                    <!-- Employees table will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section id="usersSection" class="content-section admin-only">
+                <div class="section-header">
+                    <h2>Użytkownicy</h2>
+                    <div class="section-actions">
+                        <button id="newUserBtn" class="btn btn-primary">Nowy użytkownik</button>
+                    </div>
+                </div>
+                
+                <div id="usersTable" class="users-table">
+                    <!-- Users table will be loaded here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="reportModalTitle">Nowy raport</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            
+            <form id="reportForm" class="modal-body">
+                <div class="form-group">
+                    <label for="reportDate">Data raportu</label>
+                    <input type="date" id="reportDate" name="reportDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="objectName">Nazwa obiektu <span class="char-limit">(0/300)</span></label>
+                    <input type="text" id="objectName" name="objectName" maxlength="300" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="workPerformed">Wykonane prace <span class="char-limit">(0/300)</span></label>
+                    <textarea id="workPerformed" name="workPerformed" maxlength="300" rows="4" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notesProblems">Uwagi/Problemy <span class="char-limit">(0/300)</span></label>
+                    <textarea id="notesProblems" name="notesProblems" maxlength="300" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Współpracownicy</label>
+                    <div id="employeesContainer">
+                        <div class="employee-entry">
+                            <select class="employee-select" required>
+                                <option value="">Wybierz pracownika</option>
+                            </select>
+                            <input type="time" class="start-time" placeholder="Godz. rozpoczęcia" required>
+                            <input type="time" class="end-time" placeholder="Godz. zakończenia" required>
+                            <button type="button" class="btn btn-text remove-employee">Usuń</button>
+                        </div>
+                    </div>
+                    <button type="button" id="addEmployeeBtn" class="btn btn-text">+ Dodaj pracownika</button>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reportFiles">Załączniki</label>
+                    <input type="file" id="reportFiles" name="files" multiple accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.xls,.xlsx">
+                    <small class="form-text">Maksymalnie 5 plików, do 10MB każdy. Dozwolone typy: JPG, PNG, PDF, DOC, XLS</small>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary modal-cancel">Anuluj</button>
+                    <button type="submit" class="btn btn-primary">Zapisz raport</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Employee Modal -->
+    <div id="employeeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="employeeModalTitle">Nowy pracownik</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            
+            <form id="employeeForm" class="modal-body">
+                <div class="form-group">
+                    <label for="employeeFirstName">Imię</label>
+                    <input type="text" id="employeeFirstName" name="firstName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="employeeLastName">Nazwisko</label>
+                    <input type="text" id="employeeLastName" name="lastName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="employeeEmail">Email</label>
+                    <input type="email" id="employeeEmail" name="email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="employeePhone">Telefon</label>
+                    <input type="tel" id="employeePhone" name="phone">
+                </div>
+                
+                <div class="form-group">
+                    <label for="employeePosition">Stanowisko</label>
+                    <input type="text" id="employeePosition" name="position">
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary modal-cancel">Anuluj</button>
+                    <button type="submit" class="btn btn-primary">Zapisz pracownika</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="userModalTitle">Nowy użytkownik</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            
+            <form id="userForm" class="modal-body">
+                <div class="form-group">
+                    <label for="userUsername">Nazwa użytkownika</label>
+                    <input type="text" id="userUsername" name="username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userEmail">Email</label>
+                    <input type="email" id="userEmail" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userPassword">Hasło</label>
+                    <input type="password" id="userPassword" name="password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userFirstName">Imię</label>
+                    <input type="text" id="userFirstName" name="firstName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userLastName">Nazwisko</label>
+                    <input type="text" id="userLastName" name="lastName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userRole">Rola</label>
+                    <select id="userRole" name="role" required>
+                        <option value="">Wybierz rolę</option>
+                        <option value="employee">Pracownik</option>
+                        <option value="coordinator">Koordynator</option>
+                        <option value="administrator">Administrator</option>
+                    </select>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary modal-cancel">Anuluj</button>
+                    <button type="submit" class="btn btn-primary">Zapisz użytkownika</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Profil użytkownika</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            
+            <form id="profileForm" class="modal-body">
+                <div class="form-group">
+                    <label for="profileFirstName">Imię</label>
+                    <input type="text" id="profileFirstName" name="firstName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="profileLastName">Nazwisko</label>
+                    <input type="text" id="profileLastName" name="lastName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="profileEmail">Email</label>
+                    <input type="email" id="profileEmail" name="email" required>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary modal-cancel">Anuluj</button>
+                    <button type="submit" class="btn btn-primary">Zaktualizuj profil</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/employee.js"></script>
+    <script src="js/coordinator.js"></script>
+    <script src="js/admin.js"></script>
+    <script>
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+    </script>
+</body>
+</html>
